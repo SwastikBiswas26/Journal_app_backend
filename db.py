@@ -1,6 +1,11 @@
 from pymongo import MongoClient, ASCENDING
 import logging
 from config import Config
+try:
+    import certifi
+    ca_file = certifi.where()
+except ImportError:
+    ca_file = None
 
 logger = logging.getLogger(__name__)
 
@@ -10,7 +15,10 @@ db = None
 def get_db():
     global client, db
     if db is None:
-        client = MongoClient(Config.MONGO_URI, serverSelectionTimeoutMS=5000)
+        kwargs = {"serverSelectionTimeoutMS": 5000}
+        if ca_file and ("mongodb+srv://" in Config.MONGO_URI or "tls=true" in Config.MONGO_URI.lower()):
+            kwargs["tlsCAFile"] = ca_file
+        client = MongoClient(Config.MONGO_URI, **kwargs)
         db = client[Config.DATABASE_NAME]
     return db
 
